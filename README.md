@@ -208,13 +208,13 @@ All three MCP servers are configured automatically via `plugin.json` when you in
 Cowork 모드는 `plugin.json`의 MCP 자동 주입을 아직 지원하지 않아요. 아래 설정을 `~/Library/Application Support/Claude/claude_desktop_config.json`의 `mcpServers`에 직접 추가하고 앱을 재시작하세요:
 
 ```json
-"obsidian": {
+"obsidian-mcp": {
   "command": "npx",
-  "args": ["-y", "obsidian-mcp", "/Users/yourname/Documents/Obsidian Vault"]
+  "args": ["-y", "obsidian-mcp", "obsidian vault path"]
 }
 ```
 
-`/Users/yourname/Documents/Obsidian Vault` 부분을 본인의 vault 경로로 교체하세요.
+`obsidian vault path` 부분을 해당 플러그인의 결과가 저장될 obsidian vault 경로로 교체하세요.
 
 
 ## PDF Source

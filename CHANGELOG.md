@@ -7,6 +7,9 @@
 - **Mode 2 Google Drive scope restricted** — only `Shared drives/Paper/` path allowed; Claude now re-confirms with user if path does not contain `Shared drives/Paper`
 - **Affiliation keyword index now explicit** — Mode 1 and Mode 2 step 6 updated to clarify that BOTH `research_area_tags` AND `affiliation_tags` generate/update `Papers/Keywords/[tag].md` index files
 
+### Documentation
+- **README Cowork manual MCP snippet** — example server key set to `obsidian-mcp` (matches typical `mcpServers` entry); vault path placeholder and Korean copy updated for Claude Desktop hand configuration
+
 ---
 
 ## [1.2.1] - 2026-04-16
