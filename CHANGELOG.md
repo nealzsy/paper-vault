@@ -1,5 +1,16 @@
 # Changelog
 
+## [1.3.0] - 2026-04-16
+
+### Changed
+- **Affiliation hubs moved to `Papers/Affiliation/`** — research-area index notes stay in `Papers/Keywords/`; each matched affiliation tag gets/updates `Papers/Affiliation/[Company].md` (Mode 1 & 2 step 6). Mode 3 resolves Research Area vs Affiliation from taxonomy and reads the correct hub path.
+- **SKILL.md** — vault tree, hub index templates (keyword vs affiliation), result report examples, and `version` → 1.3.0
+- **README + CLAUDE** — vault layout documents `Papers/Affiliation/`
+
+Existing vaults: affiliation hub `.md` files previously under `Papers/Keywords/` are not moved automatically; copy or move them to `Papers/Affiliation/` (same filenames) to avoid duplicate hubs.
+
+---
+
 ## [1.2.2] - 2026-04-16
 
 ### Fixed

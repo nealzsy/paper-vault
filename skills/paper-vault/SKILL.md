@@ -10,7 +10,7 @@ description: >
 license: MIT
 metadata:
   author: nayo
-  version: 1.2.2
+  version: 1.3.0
   category: research
   tags: [obsidian, papers, pdf, markdown, research, knowledge-base, IVF]
 ---
@@ -30,8 +30,9 @@ Default: `~/Documents/Obsidian Vault`
 ```
 {vault_papers_path}/          ← Obsidian vault (notes written here)
 └── Papers/
-    ├── Notes/      ← paper notes (.md)
-    └── Keywords/   ← category index (Knowledge Graph hub)
+    ├── Notes/        ← paper notes (.md)
+    ├── Keywords/     ← research-area hub (one .md per research category)
+    └── Affiliation/  ← affiliation hub (one .md per company/institution tag)
 ```
 
 PDF source can be anywhere — local folder or Google Drive Desktop sync path:
@@ -177,9 +178,9 @@ No
 
 ---
 
-## Keyword Index Note Format
+## Keyword index (research area)
 
-`Papers/Keywords/[category].md` — hub note for each tag.
+`Papers/Keywords/[Research Area].md` — hub note for each **research_area** tag.
 
 ```markdown
 ---
@@ -201,7 +202,30 @@ Papers on pregnancy rate, live birth, and implantation prediction models.
 [[Gardner Grade]] | [[PGT Result Prediction]]
 ```
 
-When adding a new paper: append to the paper list in the existing index file and update `paper_count` and `last_updated`.
+## Affiliation index
+
+`Papers/Affiliation/[Company].md` — hub note for each **affiliation** tag (taxonomy company name as filename).
+
+```markdown
+---
+type: affiliation-index
+affiliation: "Alife"
+paper_count: 5
+last_updated: "2026-04-14"
+---
+
+# Alife
+
+Papers with author affiliation matching Alife (per taxonomy).
+
+## Papers
+- [[2024 Example paper title]]
+
+## Related affiliations
+[[KaiHealth]] | [[Presagen]]
+```
+
+When adding a new paper: append the paper link to **each** hub file that applies (Keywords and/or Affiliation) and update `paper_count` and `last_updated` in that file.
 
 ---
 
@@ -252,15 +276,18 @@ When user requests "find N papers on topic X".
    - affiliation → affiliation_tags
    - No match → empty array. Never force.
 
-6. Create note → update keyword index
+6. Create note → update hub indexes
    - New note → mcp__obsidian__create-note(path="Papers/Notes/[filename].md", content=...)
-   - Update keyword index for EACH matched tag (both research_area_tags AND affiliation_tags):
+   - For EACH `research_area_tags` match:
      - Index exists → mcp__obsidian__read-note then mcp__obsidian__edit-note
-     - Index missing → mcp__obsidian__create-note(path="Papers/Keywords/[tag].md", content=...)
+     - Index missing → mcp__obsidian__create-note(path="Papers/Keywords/[Research Area].md", content=...)
+   - For EACH `affiliation_tags` match:
+     - Index exists → mcp__obsidian__read-note then mcp__obsidian__edit-note
+     - Index missing → mcp__obsidian__create-note(path="Papers/Affiliation/[Company].md", content=...)
    - Examples:
      - research/pregnancy-prediction → `Papers/Keywords/Pregnancy Prediction.md`
-     - affiliation/alife → `Papers/Keywords/Alife.md`
-     - affiliation/kaihealth → `Papers/Keywords/KaiHealth.md`
+     - affiliation/alife → `Papers/Affiliation/Alife.md`
+     - affiliation/kaihealth → `Papers/Affiliation/KaiHealth.md`
 
 7. Report summary to user
 ```
@@ -323,10 +350,10 @@ Notes are always written to `{vault_papers_path}/Papers/Notes/` regardless of PD
    - abstract + title → research_area_tags
    - affiliation → affiliation_tags
 
-6. Create note → update keyword index
-   - Same as Mode 1 step 6 — update index for EACH matched tag (both research_area_tags AND affiliation_tags)
+6. Create note → update hub indexes
+   - Same as Mode 1 step 6 — separate paths for research vs affiliation hubs
    - research area tag → `Papers/Keywords/[Research Area].md`
-   - affiliation tag → `Papers/Keywords/[Company].md`
+   - affiliation tag → `Papers/Affiliation/[Company].md`
 
 7. Report summary
    - N new notes created
@@ -336,11 +363,13 @@ Notes are always written to `{vault_papers_path}/Papers/Notes/` regardless of PD
 
 ### Mode 3: Browse by Category
 
-When user asks "show me papers on Pregnancy Prediction".
+When user asks "show me papers on Pregnancy Prediction" or "papers from Alife".
 
 ```
-1. mcp__obsidian__read-note("Papers/Keywords/[category].md")
-2. Return paper list
+1. Resolve category against taxonomy:
+   - Research Area (Pregnancy Prediction, Gardner Grade, …) → mcp__obsidian__read-note("Papers/Keywords/[category].md")
+   - Affiliation (KaiHealth, Alife, …) → mcp__obsidian__read-note("Papers/Affiliation/[category].md")
+2. Return paper list from the hub note's ## Papers section
 ```
 
 ---
@@ -369,8 +398,10 @@ Summarize to user after completion:
 | ...   | 2024 | Pregnancy Prediction | Alife |
 | ...   | 2025 | PGT Result Prediction | - |
 
-New category indexes created: Pregnancy Prediction, PGT Result Prediction
-Updated indexes: Alife (3→4 papers)
+New keyword indexes: Pregnancy Prediction, PGT Result Prediction
+New affiliation indexes: Alife
+Updated keyword indexes: Gardner Grade (5→6 papers)
+Updated affiliation indexes: KaiHealth (2→3 papers)
 ```
 
 ---

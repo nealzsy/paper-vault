@@ -45,7 +45,7 @@ This value is stored in `.claude/settings.json` and injected into both the obsid
 - **Nested Obsidian tags** — research area tags use `research/[slug]`, affiliation tags use `affiliation/[slug]`; enables category filtering in Tags panel and Knowledge Graph
 - **Fixed taxonomy tagging** — tags matched only against `references/taxonomy.md`; never created freely
 - **claude-haiku-4-5-20251001 for analysis** — optimized for speed/cost (swap to `claude-sonnet-4-6` for higher accuracy)
-- **Papers/Notes + Papers/Keywords structure** — notes in `Papers/Notes/`, category hub indexes in `Papers/Keywords/`
+- **Papers/Notes + hub indexes** — notes in `Papers/Notes/`; research-area hubs in `Papers/Keywords/`; affiliation hubs in `Papers/Affiliation/`
 - **Keyword normalization** — raw keywords normalized via `references/keyword_normalization.md` before tagging
 - **Fail-safe fallback** — if JSON parsing fails, filename is used as title; never hard stops
 
@@ -85,4 +85,4 @@ When making any change across files:
 - `claude-haiku` JSON responses may include markdown code fences (` ``` `) — strip before parsing
 - Obsidian wikilinks use filename without extension — must match `sanitize_filename()` output exactly
 - `max_tokens=4096` for relation analysis may be insufficient for 30+ papers — split into batches of 20
-- `vault_papers_path` (userConfig) must point to the Obsidian vault root (e.g. `~/Documents/Obsidian Vault`), not the `Papers/` subfolder — the script appends `Papers/Notes/` and `Papers/Keywords/` internally
+- `vault_papers_path` (userConfig) must point to the Obsidian vault root (e.g. `~/Documents/Obsidian Vault`), not the `Papers/` subfolder — the skill uses `Papers/Notes/`, `Papers/Keywords/`, and `Papers/Affiliation/` under that root

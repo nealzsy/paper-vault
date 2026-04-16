@@ -227,8 +227,9 @@ Notes are always written to `{vault_papers_path}/Papers/Notes/` regardless of PD
 ```
 {vault_papers_path}/
 └── Papers/
-    ├── Notes/      ← one .md per paper
-    └── Keywords/   ← category index hub notes
+    ├── Notes/         ← one .md per paper
+    ├── Keywords/      ← research-area hub (one .md per category)
+    └── Affiliation/   ← affiliation hub (one .md per company tag)
 ```
 
 ## Tagging Taxonomy
