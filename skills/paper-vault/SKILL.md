@@ -10,7 +10,7 @@ description: >
 license: MIT
 metadata:
   author: nayo
-  version: 1.2.0
+  version: 1.2.1
   category: research
   tags: [obsidian, papers, pdf, markdown, research, knowledge-base, IVF]
 ---

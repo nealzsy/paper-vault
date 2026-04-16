@@ -235,7 +235,7 @@ Notes are always written to `{vault_papers_path}/Papers/Notes/` regardless of PD
 
 Tags are matched against a fixed list — never created freely.
 
-**Research Area:** `Pregnancy Prediction`, `Gardner Grade`, `PGT Result Prediction`, `Oocyte`, `Sperm`
+**Research Area:** `Pregnancy Prediction`, `Gardner Grade`, `PGT Result Prediction`, `Oocyte`, `Sperm`, `Time-lapse`
 
 **Affiliation:** KaiHealth, Alife, Presagen, AiVF, Fairtility, Vitrolife, Future Fertility, IVF 2.0, Embryonics, FertilAI, IMVITRO, MIM Fertility, GENESYS AI LABS
 
