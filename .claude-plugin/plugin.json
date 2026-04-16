@@ -1,7 +1,7 @@
 {
   "name": "paper-vault",
   "description": "Search IVF/reproductive medicine papers online, extract structured metadata, and generate linked Obsidian markdown notes with taxonomy-based tagging.",
-  "version": "1.2.1",
+  "version": "1.2.2",
   "author": {
     "name": "nayo",
     "email": "nayo.youn@kaihealth.tech"
@@ -18,7 +18,7 @@
     },
     "obsidian": {
       "command": "npx",
-      "args": ["-y", "mcp-obsidian", "${user_config.vault_papers_path}"],
+      "args": ["-y", "obsidian-mcp", "${user_config.vault_papers_path}"],
       "description": "Read and write notes to the Obsidian vault (create, edit, search, list)",
       "required": true,
       "trust": true

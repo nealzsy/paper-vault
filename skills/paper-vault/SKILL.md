@@ -10,7 +10,7 @@ description: >
 license: MIT
 metadata:
   author: nayo
-  version: 1.2.1
+  version: 1.2.2
   category: research
   tags: [obsidian, papers, pdf, markdown, research, knowledge-base, IVF]
 ---
@@ -254,8 +254,13 @@ When user requests "find N papers on topic X".
 
 6. Create note → update keyword index
    - New note → mcp__obsidian__create-note(path="Papers/Notes/[filename].md", content=...)
-   - Keyword index exists → mcp__obsidian__read-note then mcp__obsidian__edit-note
-   - Keyword index missing → mcp__obsidian__create-note(path="Papers/Keywords/[category].md", content=...)
+   - Update keyword index for EACH matched tag (both research_area_tags AND affiliation_tags):
+     - Index exists → mcp__obsidian__read-note then mcp__obsidian__edit-note
+     - Index missing → mcp__obsidian__create-note(path="Papers/Keywords/[tag].md", content=...)
+   - Examples:
+     - research/pregnancy-prediction → `Papers/Keywords/Pregnancy Prediction.md`
+     - affiliation/alife → `Papers/Keywords/Alife.md`
+     - affiliation/kaihealth → `Papers/Keywords/KaiHealth.md`
 
 7. Report summary to user
 ```
@@ -263,6 +268,12 @@ When user requests "find N papers on topic X".
 ### Mode 2: Tag PDF Files (Local or Google Drive)
 
 When user wants to create notes from PDF files stored locally or in a Google Drive Desktop sync folder.
+
+**Google Drive 사용 시 — "Paper" 공유드라이브만 허용:**
+- 허용: `~/Library/CloudStorage/GoogleDrive-[email]/Shared drives/Paper/` 하위 폴더
+- 금지: Paper 외 다른 공유드라이브 또는 개인 드라이브 (`My Drive/`)
+- 경로에 `Shared drives/Paper`가 포함되지 않으면 실행 전에 사용자에게 경로를 재확인할 것
+
 PDF source path examples:
 - Local: `/Users/yourname/Documents/Papers/`
 - Google Drive: `~/Library/CloudStorage/GoogleDrive-[email]/Shared drives/Paper/Embryo AI/`
@@ -312,7 +323,10 @@ Notes are always written to `{vault_papers_path}/Papers/Notes/` regardless of PD
    - abstract + title → research_area_tags
    - affiliation → affiliation_tags
 
-6. Create note → update keyword index (same as Mode 1 step 6 — use mcp__obsidian__create-note, mcp__obsidian__read-note, mcp__obsidian__edit-note)
+6. Create note → update keyword index
+   - Same as Mode 1 step 6 — update index for EACH matched tag (both research_area_tags AND affiliation_tags)
+   - research area tag → `Papers/Keywords/[Research Area].md`
+   - affiliation tag → `Papers/Keywords/[Company].md`
 
 7. Report summary
    - N new notes created

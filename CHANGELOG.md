@@ -1,5 +1,14 @@
 # Changelog
 
+## [1.2.2] - 2026-04-16
+
+### Fixed
+- **obsidian MCP package name corrected** — `mcp-obsidian` → `obsidian-mcp` in both `plugin.json` and README manual config section
+- **Mode 2 Google Drive scope restricted** — only `Shared drives/Paper/` path allowed; Claude now re-confirms with user if path does not contain `Shared drives/Paper`
+- **Affiliation keyword index now explicit** — Mode 1 and Mode 2 step 6 updated to clarify that BOTH `research_area_tags` AND `affiliation_tags` generate/update `Papers/Keywords/[tag].md` index files
+
+---
+
 ## [1.2.1] - 2026-04-16
 
 ### Performance
