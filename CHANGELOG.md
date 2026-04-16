@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.2.1] - 2026-04-16
+
+### Performance
+- **Mode 1 redundant CrossRef call eliminated** — Step 4 now checks search result completeness first; if title + authors + abstract + DOI are all present in the search result, CrossRef call is skipped entirely and flow jumps straight to tagging (step 5). Reduces MCP round-trips by 1–2 calls in the common case.
+- **Mode 2 abstract fallback order fixed** — When CrossRef returns no abstract, PDF metadata['subject'] is now checked first (local Bash, zero MCP cost) before falling back to `read_semantic_paper`. Avoids a Semantic Scholar call when the PDF itself contains the abstract in its metadata.
+
+---
+
 ## [1.2.0] - 2026-04-16
 
 ### Fixed

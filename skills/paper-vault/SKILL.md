@@ -239,10 +239,13 @@ When user requests "find N papers on topic X".
    mcp__paper-search-mcp-openai-v2__search_arxiv    (CS/AI)
    mcp__paper-search-mcp-openai-v2__search_semantic (general + affiliation)
 
-4. Fetch full metadata — fixed fallback order (ONE path only):
-   a. get_crossref_paper_by_doi  (title/authors/year)
-   b. abstract missing → read_semantic_paper ONCE for abstract only
-   c. still missing → proceed with empty abstract. Stop here.
+4. Check search result completeness FIRST (skip DB calls if already complete):
+   - Search result has title + authors + abstract + DOI → skip to step 5 immediately
+   - DOI missing → get_crossref_paper_by_doi to retrieve DOI (then check abstract)
+   - Abstract missing (but DOI present):
+     a. read_semantic_paper ONCE for abstract only
+     b. still missing → proceed with empty abstract. Stop here.
+   - Never call CrossRef if the search result already contains title + authors + abstract + DOI.
 
 5. Apply tags (taxonomy match)
    - abstract + title → research_area_tags
@@ -298,10 +301,12 @@ Notes are always written to `{vault_papers_path}/Papers/Notes/` regardless of PD
 4. Fetch full metadata from DB:
    - DOI found → mcp__paper-search-mcp-openai-v2__get_crossref_paper_by_doi
      (most accurate — title, authors, journal, year)
+   - Abstract missing from CrossRef result:
+     a. First check PDF metadata['subject'] field (local Bash — no MCP cost)
+     b. If metadata['subject'] has useful text → use it as abstract. Stop here.
+     c. If still missing → read_semantic_paper ONCE for abstract only (last resort)
    - No DOI, has title → mcp__paper-search-mcp-openai-v2__search_semantic
      (returns abstract, affiliation, citations)
-   - Abstract missing from CrossRef → supplement from PDF metadata['subject']
-     or page 1 text if available
 
 5. Apply tags (taxonomy match)
    - abstract + title → research_area_tags
