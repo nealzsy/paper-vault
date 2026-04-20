@@ -1,5 +1,18 @@
 # Changelog
 
+## [1.5.0] - 2026-04-20
+
+### Added
+- **`settings.json` 추가 (플러그인 루트)** — 플러그인 활성화 시 자동으로 적용되는 기본 설정. `permissions.allow`에 세 MCP 서버(`mcp__paper-search-mcp-openai-v2`, `mcp__obsidian`, `mcp__gdrive`)를 프리어프루브하여 스킬 실행 시 매 툴 콜마다 권한 프롬프트가 뜨지 않도록 함. 배포 시 사용자가 설치만 해도 별도 수동 승인 없이 바로 사용 가능.
+
+### Removed
+- **`plugin.json`에서 `"trust": true` 필드 제거** — 공식 plugin.json 스키마에 없는 필드이며, 매 툴 콜 프롬프트 억제와는 무관. 실제 권한 프리어프루브는 새로 추가된 루트 `settings.json`이 담당.
+
+### Changed
+- **CLAUDE.md 구조 섹션 업데이트** — 루트 `settings.json` 추가 반영.
+
+---
+
 ## [1.4.1] - 2026-04-20
 
 ### Added

@@ -1,7 +1,7 @@
 {
   "name": "paper-vault",
   "description": "Search IVF/reproductive medicine papers online, extract structured metadata, and generate linked Obsidian markdown notes with taxonomy-based tagging. Supports direct Google Drive PDF import.",
-  "version": "1.4.1",
+  "version": "1.5.0",
   "author": {
     "name": "nayo",
     "email": "nayo.youn@kaihealth.tech"
@@ -13,22 +13,19 @@
       "command": "npx",
       "args": ["-y", "mcp-remote", "https://server.smithery.ai/TitanSneaker/paper-search-mcp-openai-v2/mcp"],
       "description": "Search papers from PubMed, arXiv, and Semantic Scholar",
-      "required": true,
-      "trust": true
+      "required": true
     },
     "obsidian": {
       "command": "npx",
       "args": ["-y", "obsidian-mcp", "${user_config.vault_papers_path}"],
       "description": "Read and write notes to the Obsidian vault (create, edit, search, list)",
-      "required": true,
-      "trust": true
+      "required": true
     },
     "gdrive": {
       "command": "npx",
       "args": ["-y", "@modelcontextprotocol/server-gdrive"],
       "description": "Read PDF files and metadata directly from Google Drive Shared Drive — no Desktop sync required",
-      "required": true,
-      "trust": true
+      "required": true
     }
   },
   "userConfig": {

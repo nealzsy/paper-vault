@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "mcp__paper-search-mcp-openai-v2",
+      "mcp__obsidian",
+      "mcp__gdrive"
+    ]
+  }
+}

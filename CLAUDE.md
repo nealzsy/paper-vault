@@ -7,7 +7,9 @@ This is the **Paper Vault** plugin — a Claude plugin that searches IVF/reprodu
 ```
 paper-vault/
 ├── .claude-plugin/
-│   └── plugin.json                   # Plugin manifest (name, version, author)
+│   ├── plugin.json                   # Plugin manifest (name, version, author)
+│   └── marketplace.json              # Marketplace manifest (repo serves as its own marketplace)
+├── settings.json                     # Default settings applied on plugin enable (permissions.allow for MCP servers)
 ├── skills/
 │   └── paper-vault/
 │       ├── SKILL.md                  # Main skill file
@@ -51,6 +53,7 @@ This value is stored in `.claude/settings.json` and injected into both the obsid
 - **Papers/Notes + hub indexes** — notes in `Papers/Notes/`; research-area hubs in `Papers/Keywords/`; affiliation hubs in `Papers/Affiliation/`
 - **Keyword normalization** — raw keywords normalized via `references/keyword_normalization.md` before tagging
 - **Fail-safe fallback** — if JSON parsing fails, filename is used as title; never hard stops
+- **Auto-approved MCP permissions via root `settings.json`** — the plugin ships `settings.json` at its root with `permissions.allow` listing the three MCP servers (`mcp__paper-search-mcp-openai-v2`, `mcp__obsidian`, `mcp__gdrive`). Claude Code merges this into the user's settings on plugin enable, so installers don't see per-tool approval prompts. Required because plugin.json's `trust: true` (removed in 1.5.0) was not the correct mechanism — it's not in the official plugin.json schema.
 
 ## Working on This Repo
 
