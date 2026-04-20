@@ -25,7 +25,22 @@ Searches papers, saves them as structured notes, tags with a fixed taxonomy, and
 
 Notes are **always written to the Obsidian vault**, regardless of where PDFs are stored.
 
-Vault path is set via `vault_papers_path` (configured at plugin install time).
+**Before doing anything else, verify the vault path is configured:**
+
+1. Try `mcp__obsidian-mcp__list-available-vaults` to check the connected vault path.
+2. If the vault path looks wrong (e.g. still shows default `~/Documents/Obsidian Vault`) or the MCP fails → ask the user:
+   > "Obsidian 볼트 경로를 알려주세요. (예: `/Users/yourname/Documents/My Vault`)"
+3. Once confirmed, tell the user to update `~/.claude/settings.json` by adding:
+   ```json
+   "pluginUserConfig": {
+     "paper-vault@paper-vault-marketplace": {
+       "vault_papers_path": "/Users/yourname/Documents/My Vault"
+     }
+   }
+   ```
+   Then restart Claude Code / Cowork to apply.
+
+Vault path is set via `vault_papers_path` (configured in `~/.claude/settings.json`).
 Default: `~/Documents/Obsidian Vault`
 
 ```
