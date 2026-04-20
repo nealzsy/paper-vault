@@ -1,5 +1,34 @@
 # Changelog
 
+## [1.4.1] - 2026-04-20
+
+### Fixed
+- **`edit-note` fallback 명시** — obsidian MCP의 `edit-note` 툴이 일부 환경에서 스키마 오류로 실패하는 버그 대응. SKILL.md hub 인덱스 업데이트 섹션 및 CLAUDE.md Common Pitfalls에 fallback 절차 추가: `read-note`로 현재 내용 읽기 → 메모리에서 수정 → 빌트인 Write/Edit 파일 도구로 vault 마운트 경로에 직접 덮어쓰기. `mcp__filesystem__*`는 경로 제한으로 사용 불가 — 명시적으로 금지.
+- **`is_multicenter` 판단 기준 보완** — 기존 키워드("multi-center", "multicenter" 등) 외에 "multiple clinics" 및 "2개 이상의 named 클리닉/병원에서 데이터 수집" 패턴도 `true`로 판단하도록 수정. ESHRE abstract처럼 "seven in vitro fertilization clinics" 표현을 감지하지 못하던 문제 수정.
+- **파일명 길이 100 → 200자로 확장** — 긴 논문 제목이 의미 있는 단어에서 잘리는 문제 수정.
+
+---
+
+## [1.4.0] - 2026-04-20
+
+### Changed
+- **Mode 2: Google Drive MCP 직접 읽기로 전환** — 기존 filesystem MCP + pymupdf 방식 제거. `mcp__gdrive__search_files`로 PDF 목록 조회, `mcp__gdrive__read_file_content`로 텍스트 추출, `mcp__gdrive__get_file_metadata`로 파일 ID·업로더 수집. Google Drive Desktop 설치 및 "오프라인 사용 설정" 불필요.
+- **노트 frontmatter에 Drive 필드 추가** — Mode 2 경유 노트에 `pdf_source: gdrive`, `gdrive_file_id`, `gdrive_url`, `added_by` 필드 포함. Obsidian에서 원본 PDF로 1-click 이동 가능.
+- **plugin.json: `gdrive` MCP 서버 추가** — `@modelcontextprotocol/server-gdrive` 사용; `filesystem` MCP 제거.
+- **plugin.json: `gdrive_shared_folder_id` userConfig 추가** — 설치 시 Google Drive 폴더 ID 입력; Mode 2 자동 사용.
+- **SKILL.md**: Mode 2 워크플로우 전면 재작성, Notes 섹션 보강, 버전 1.4.0.
+- **CLAUDE.md**: Key Decisions 업데이트 (pymupdf 제거, Drive MCP 추가), Common Pitfalls 보강.
+
+### Added
+- **Mode 2 수량 제한** — 사용자가 "N편만" 같이 수량을 명시하면 새 노트 N개 생성 후 즉시 중단. 스킵(이미 존재)된 노트는 카운트 미포함. 수량 미명시 시 폴더 전체 처리.
+
+### Removed
+- **pymupdf 의존성 제거** — PDF 텍스트 추출을 Drive MCP가 대체하므로 Python/pymupdf 설치 불필요.
+- **filesystem MCP 제거** — PDF 스캔 역할을 `mcp__gdrive__search_files`가 대체.
+- **`gdrive_shared_folder_id` userConfig 제거** — Drive 폴더 ID를 `0AAhracftG0XwUk9PVA`로 SKILL.md에 하드코딩; 설치 시 입력 불필요.
+
+---
+
 ## [1.3.0] - 2026-04-16
 
 ### Changed

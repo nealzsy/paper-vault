@@ -38,10 +38,12 @@ This value is stored in `.claude/settings.json` and injected into both the obsid
 ## Key Decisions
 
 - **paper-search MCP for retrieval** — searches PubMed, arXiv, Semantic Scholar via DOI or title
-- **PDF metadata extraction** — reads only PDF metadata dict + page 1 (fallback) to extract DOI/title; never reads full document
-- **PDF source is flexible** — PDFs can be local or Google Drive Desktop sync folder (`~/Library/CloudStorage/GoogleDrive-.../Shared drives/...`); Google Drive files must be set to "available offline" in Finder
-- **Notes always written to Obsidian vault** — regardless of PDF source, .md notes go to `{vault_papers_path}/Papers/Notes/`
-- **obsidian MCP for vault reads/writes** — all note create/edit/search/list operations go through `mcp__obsidian__*`; filesystem MCP is kept only for scanning PDF source folders in Mode 2
+- **Google Drive MCP for PDF source** — Mode 2 reads PDFs directly from Google Drive via `mcp__gdrive__*`; no Google Drive Desktop or "available offline" setup required
+- **PDF text extraction via Drive MCP** — `mcp__gdrive__read_file_content` returns extracted PDF text; DOI extracted with regex (`10.\d{4,9}/[^\s]+`); pymupdf no longer used
+- **Drive metadata in notes** — each Mode 2 note includes `gdrive_file_id`, `gdrive_url`, `added_by` (last modifier email) in frontmatter for direct PDF access from Obsidian
+- **Notes always written to Obsidian vault** — .md notes go to `{vault_papers_path}/Papers/Notes/` regardless of Drive folder
+- **obsidian MCP for vault reads/writes** — all note create/edit/search/list operations go through `mcp__obsidian__*`
+- **filesystem MCP removed** — no longer needed; Drive PDF scanning is handled by `mcp__gdrive__search_files`
 - **Nested Obsidian tags** — research area tags use `research/[slug]`, affiliation tags use `affiliation/[slug]`; enables category filtering in Tags panel and Knowledge Graph
 - **Fixed taxonomy tagging** — tags matched only against `references/taxonomy.md`; never created freely
 - **claude-haiku-4-5-20251001 for analysis** — optimized for speed/cost (swap to `claude-sonnet-4-6` for higher accuracy)
@@ -57,9 +59,9 @@ When editing `skills/paper-vault/SKILL.md`:
 - YAML frontmatter must have `name` and `description` with trigger phrases
 - Update `CHANGELOG.md` with a summary of changes under the current version
 
-When editing Python code in the skill:
-- Python (pymupdf) is used only for reading PDF metadata — vault writes go through the obsidian MCP, not Python
-- Never hardcode vault paths in Python — vault path is handled by `userConfig.vault_papers_path` injected into filesystem MCP args
+When editing text extraction logic in the skill:
+- Python/pymupdf is **no longer used** — PDF text extraction is handled by `mcp__gdrive__read_file_content`
+- DOI regex (`r'10\.\d{4,9}/[^\s\]).]+'`) is applied to the text returned by the Drive MCP
 - Model name changes must be reflected in the Notes section of SKILL.md as well
 - `sanitize_filename()` changes must be synced with filename rules in SKILL.md
 - Update `CHANGELOG.md` with the change
@@ -74,6 +76,8 @@ When editing `plugin.json`:
 - Version bump required for any functional change
 - Update `CHANGELOG.md` with the change
 - Reflect any MCP or userConfig changes in README.md and CLAUDE.md
+- `gdrive` MCP server uses `@modelcontextprotocol/server-gdrive` — requires Google OAuth credentials on first run
+- Google Drive 대상 폴더는 `0AAhracftG0XwUk9PVA`로 하드코딩 (userConfig 아님) — 변경 시 SKILL.md Mode 2 step 1과 이 파일을 함께 수정
 
 When making any change across files:
 - Update `CHANGELOG.md` under the current version
@@ -86,3 +90,7 @@ When making any change across files:
 - Obsidian wikilinks use filename without extension — must match `sanitize_filename()` output exactly
 - `max_tokens=4096` for relation analysis may be insufficient for 30+ papers — split into batches of 20
 - `vault_papers_path` (userConfig) must point to the Obsidian vault root (e.g. `~/Documents/Obsidian Vault`), not the `Papers/` subfolder — the skill uses `Papers/Notes/`, `Papers/Keywords/`, and `Papers/Affiliation/` under that root
+- Google Drive 폴더 ID는 SKILL.md에 하드코딩(`0AAhracftG0XwUk9PVA`) — Shared Drive ID가 아니라 폴더 ID여야 함 (URL: `drive.google.com/drive/folders/{FOLDER_ID}`)
+- `mcp__gdrive__read_file_content` may return empty text for scanned (image-only) PDFs — in that case fall back to `get_file_metadata` name for title and proceed with DOI lookup by title
+- `added_by` reflects last modifier, not original uploader — document this limitation in notes if relevant
+- **`mcp__obsidian__edit-note` schema bug** — in some environments this tool's parameter schema is exported as empty (`"properties": {}`), causing all calls to fail with "Invalid discriminator value". Fallback: read the hub note with `read-note`, modify content in memory, then write directly to `{vault_papers_path}/Papers/Keywords/[file].md` or `{vault_papers_path}/Papers/Affiliation/[file].md` using the built-in Write/Edit file tool. Do NOT use `mcp__filesystem__*` as a fallback — it has path restrictions and is not registered in this plugin.

@@ -1,13 +1,13 @@
 {
   "name": "paper-vault",
-  "description": "Search IVF/reproductive medicine papers online, extract structured metadata, and generate linked Obsidian markdown notes with taxonomy-based tagging.",
-  "version": "1.3.0",
+  "description": "Search IVF/reproductive medicine papers online, extract structured metadata, and generate linked Obsidian markdown notes with taxonomy-based tagging. Supports direct Google Drive PDF import.",
+  "version": "1.4.1",
   "author": {
     "name": "nayo",
     "email": "nayo.youn@kaihealth.tech"
   },
   "license": "MIT",
-  "keywords": ["obsidian", "papers", "research", "IVF", "knowledge-base"],
+  "keywords": ["obsidian", "papers", "research", "IVF", "knowledge-base", "google-drive"],
   "mcpServers": {
     "paper-search-mcp-openai-v2": {
       "command": "npx",
@@ -23,17 +23,17 @@
       "required": true,
       "trust": true
     },
-    "filesystem": {
+    "gdrive": {
       "command": "npx",
-      "args": ["-y", "@modelcontextprotocol/server-filesystem", "${user_config.vault_papers_path}"],
-      "description": "Scan PDF source folders for Mode 2 (local or Google Drive Desktop path)",
-      "required": false,
+      "args": ["-y", "@modelcontextprotocol/server-gdrive"],
+      "description": "Read PDF files and metadata directly from Google Drive Shared Drive — no Desktop sync required",
+      "required": true,
       "trust": true
     }
   },
   "userConfig": {
     "vault_papers_path": {
-      "description": "Obsidian vault root path",
+      "description": "Obsidian vault root path (e.g. ~/Documents/Obsidian Vault)",
       "default": "~/Documents/Obsidian Vault",
       "sensitive": false
     }

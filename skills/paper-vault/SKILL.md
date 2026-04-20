@@ -7,10 +7,11 @@ description: >
   - User requests "organize papers", "add tags", "add to vault", "save to obsidian"
   - User asks about "Pregnancy Prediction", "Gardner Grade", "PGT", "IVF", "embryo" papers
   - User searches for papers by company (Alife, Presagen, AiVF, KaiHealth, etc.)
+  - User wants to sync or import PDFs from Google Drive
 license: MIT
 metadata:
   author: nayo
-  version: 1.3.0
+  version: 1.4.1
   category: research
   tags: [obsidian, papers, pdf, markdown, research, knowledge-base, IVF]
 ---
@@ -35,11 +36,10 @@ Default: `~/Documents/Obsidian Vault`
     └── Affiliation/  ← affiliation hub (one .md per company/institution tag)
 ```
 
-PDF source can be anywhere — local folder or Google Drive Desktop sync path:
-```
-~/Library/CloudStorage/GoogleDrive-[email]/Shared drives/[Drive Name]/
-```
-Pass the PDF folder path when invoking Mode 2. Notes always go to `vault_papers_path`.
+PDF source is **Google Drive (Shared Drive)**. PDFs are read directly via Google Drive MCP — no Desktop sync or "available offline" setup required.
+
+The target folder is configured as `gdrive_shared_folder_id` (set at plugin install time).
+Example shared drive folder ID: `0AAhracftG0XwUk9PVA`
 
 ---
 
@@ -116,13 +116,13 @@ Pull numeric results directly from abstract. Examples:
 - Leave empty if no figures present.
 
 ### Determining is_multicenter
-Set `true` if abstract/title contains: "multi-center", "multicenter", "multiple centers", "multi-institutional".
+Set `true` if abstract/title contains any of: "multi-center", "multicenter", "multiple centers", "multi-institutional", "multiple clinics", or if the study design mentions data collected from **2 or more named clinics/hospitals**.
 
 ---
 
 ## Paper Note Format
 
-Save path: `Papers/Notes/[YEAR] [Title].md` (title truncated to 100 chars at word boundary, special chars removed)
+Save path: `Papers/Notes/[YEAR] [Title].md` (title truncated to 200 chars at word boundary, special chars removed)
 
 > Keyword normalization rules: [references/keyword_normalization.md](references/keyword_normalization.md)
 
@@ -152,6 +152,10 @@ tags:
   - research/gardner-grade
   - affiliation/alife
 date_added: "2026-04-14"
+pdf_source: "gdrive"
+gdrive_file_id: "1abc..."
+gdrive_url: "https://drive.google.com/file/d/1abc.../view"
+added_by: "user@example.com"
 ---
 
 # Paper title
@@ -172,9 +176,17 @@ No
 
 ## Links
 - [DOI](https://doi.org/10.xxxx/xxxxx)
+- [Google Drive](https://drive.google.com/file/d/1abc.../view)
 ```
 
-**Filename rule:** `[YEAR] Title.md` — year omitted if unknown. Remove special chars (`:`, `/`, `?`, etc.). Truncate at 100 chars on word boundary (never cut mid-word).
+**Google Drive 필드 규칙:**
+- `pdf_source`: Mode 2 (Drive) 경유 시 항상 `"gdrive"` 고정; Mode 1 (검색) 경유 시 필드 생략
+- `gdrive_file_id`: `get_file_metadata` 응답의 `id` 값
+- `gdrive_url`: `https://drive.google.com/file/d/{file_id}/view`
+- `added_by`: `get_file_metadata` 응답의 `lastModifyingUser.emailAddress` (없으면 `""`)
+- 위 세 필드는 Mode 2 전용 — Mode 1(검색)에서 생성하는 노트에는 포함하지 않는다
+
+**Filename rule:** `[YEAR] Title.md` — year omitted if unknown. Remove special chars (`:`, `/`, `?`, etc.). Truncate at 200 chars on word boundary (never cut mid-word).
 
 ---
 
@@ -226,6 +238,13 @@ Papers with author affiliation matching Alife (per taxonomy).
 ```
 
 When adding a new paper: append the paper link to **each** hub file that applies (Keywords and/or Affiliation) and update `paper_count` and `last_updated` in that file.
+
+> **⚠️ edit-note fallback:** `mcp__obsidian__edit-note` may fail with a schema error in some environments. If it does, use this fallback sequence:
+> 1. `mcp__obsidian__read-note` — read the current hub note content
+> 2. Modify the content in memory: increment `paper_count`, update `last_updated`, append the new paper link under `## Papers`
+> 3. Write the full updated content directly to the vault path using the built-in **Write** or **Edit** file tool at `{vault_papers_path}/Papers/Keywords/[Research Area].md` or `{vault_papers_path}/Papers/Affiliation/[Company].md`
+>
+> The vault folder is always accessible as a mounted path in Cowork — do **not** fall back to `mcp__filesystem__*` tools.
 
 ---
 
@@ -292,57 +311,61 @@ When user requests "find N papers on topic X".
 7. Report summary to user
 ```
 
-### Mode 2: Tag PDF Files (Local or Google Drive)
+### Mode 2: Tag PDF Files (Google Drive)
 
-When user wants to create notes from PDF files stored locally or in a Google Drive Desktop sync folder.
+When user wants to create notes from PDF files stored in the Google Drive Shared Drive.
 
-**Google Drive 사용 시 — "Paper" 공유드라이브만 허용:**
-- 허용: `~/Library/CloudStorage/GoogleDrive-[email]/Shared drives/Paper/` 하위 폴더
-- 금지: Paper 외 다른 공유드라이브 또는 개인 드라이브 (`My Drive/`)
-- 경로에 `Shared drives/Paper`가 포함되지 않으면 실행 전에 사용자에게 경로를 재확인할 것
+PDF는 Google Drive MCP로 **클라우드에서 직접** 읽는다 — Google Drive Desktop 설치나 "오프라인 사용 설정" 불필요.
+Notes는 항상 `{vault_papers_path}/Papers/Notes/`에 저장된다.
 
-PDF source path examples:
-- Local: `/Users/yourname/Documents/Papers/`
-- Google Drive: `~/Library/CloudStorage/GoogleDrive-[email]/Shared drives/Paper/Embryo AI/`
+대상 폴더: `https://drive.google.com/drive/folders/0AAhracftG0XwUk9PVA` (고정)
 
-Notes are always written to `{vault_papers_path}/Papers/Notes/` regardless of PDF source.
+**수량 규칙:**
+- 사용자가 수량을 명시한 경우 (예: "2편만", "5개") → 새 노트 N개 생성 후 즉시 중단. 이미 있는 노트는 카운트에 포함하지 않음.
+- 수량 미명시 시 → 폴더 전체 처리
 
 ```
-1. Scan PDF folder via mcp__filesystem__list_directory
-   List all .pdf files in the target directory
+1. Find PDFs in Drive folder
+   mcp__gdrive__search_files(
+     folder_id="0AAhracftG0XwUk9PVA",
+     query="mimeType='application/pdf'"
+   )
+   → file list: [{id, name, modifiedTime, lastModifyingUser}, ...]
 
-2. Skip already-processed PDFs (dedup check):
-   - For each PDF, extract DOI from metadata (step 3a below — fast, no token cost)
-   - Search existing notes for that DOI:
-       mcp__obsidian__search-vault(query=doi)
-   - If DOI found in any existing note → SKIP this PDF
-   - If no DOI extractable → search by year+partial-title:
-       mcp__obsidian__search-vault(query="[year] [partial title]")
-     → SKIP if a matching note is found
-   - Only process PDFs with no matching existing note
+2. Skip already-processed PDFs (dedup check) + count guard:
+   - For each file, extract a candidate DOI hint from file name if possible
+     (e.g. "10.1016_j.rbmo.2024.104123.pdf" → DOI hint)
+   - mcp__obsidian__search-vault(query=doi_hint or file_name_stem)
+   - Matching note found → SKIP (스킵된 파일은 N 카운트에 포함 안 함)
+   - 새 노트 생성 완료 수가 N에 도달하면 → 남은 파일 처리 없이 즉시 step 7로 이동
+   - Only process files with no matching existing note
 
-3. For each unprocessed PDF, extract DOI + title (no full-document read):
+3. For each unprocessed PDF, extract text and pull DOI + title:
+   mcp__gdrive__read_file_content(file_id=...)
+   → Returns extracted text of the PDF
 
-   a. Read PDF metadata dictionary (Python via Bash — zero token cost)
-      import pymupdf
-      meta = pymupdf.open(path).metadata
-      → check meta['subject'] or meta['title'] for DOI pattern (10.\d{4,}/...)
-      → use meta['title'] as title if present
+   a. Apply DOI regex to extracted text:
+      r'10\.\d{4,9}/[^\s\])]+'
+      → use first match as DOI
 
-   b. If no DOI found in metadata → read page 1 only (fallback)
-      page1 = doc[0].get_text()
-      → extract DOI with regex: r'10\.\d{4,9}/[^\s]+'
-      → title comes from DB lookup (no need to parse from page)
+   b. If no DOI found → extract candidate title from first 500 chars
+      (first long line that is not a URL, author list, or journal name)
+      → use as title for DB search fallback
 
-   c. If still no DOI → use metadata title for DB search (last resort)
+   c. Get file metadata for Drive link + uploader:
+      mcp__gdrive__get_file_metadata(file_id=...)
+      → gdrive_file_id = file.id
+      → gdrive_url = "https://drive.google.com/file/d/{file_id}/view"
+      → added_by = file.lastModifyingUser.emailAddress (or "")
 
 4. Fetch full metadata from DB:
    - DOI found → mcp__paper-search-mcp-openai-v2__get_crossref_paper_by_doi
      (most accurate — title, authors, journal, year)
    - Abstract missing from CrossRef result:
-     a. First check PDF metadata['subject'] field (local Bash — no MCP cost)
-     b. If metadata['subject'] has useful text → use it as abstract. Stop here.
-     c. If still missing → read_semantic_paper ONCE for abstract only (last resort)
+     a. Search extracted PDF text for "Abstract" section (regex, no MCP cost)
+     b. If found → use as abstract. Stop here.
+     c. If still missing → mcp__paper-search-mcp-openai-v2__read_semantic_paper
+        ONCE for abstract only (last resort)
    - No DOI, has title → mcp__paper-search-mcp-openai-v2__search_semantic
      (returns abstract, affiliation, citations)
 
@@ -351,7 +374,8 @@ Notes are always written to `{vault_papers_path}/Papers/Notes/` regardless of PD
    - affiliation → affiliation_tags
 
 6. Create note → update hub indexes
-   - Same as Mode 1 step 6 — separate paths for research vs affiliation hubs
+   - Include Drive fields in frontmatter: pdf_source, gdrive_file_id, gdrive_url, added_by
+   - Same hub update logic as Mode 1 step 6
    - research area tag → `Papers/Keywords/[Research Area].md`
    - affiliation tag → `Papers/Affiliation/[Company].md`
 
@@ -411,6 +435,10 @@ Updated affiliation indexes: KaiHealth (2→3 papers)
 - Large batches (50+ papers) will incur API costs — test with a small set first.
 - Relation analysis uses `claude-haiku-4-5-20251001` with max_tokens=4096.
 - `vault_papers_path` is set during plugin install (default: `~/Documents/Obsidian Vault`). Must point to vault root — not the `Papers/` subfolder.
+- Google Drive 대상 폴더는 `0AAhracftG0XwUk9PVA`로 고정 (`https://drive.google.com/drive/folders/0AAhracftG0XwUk9PVA`). 변경 시 SKILL.md Mode 2 step 1의 `folder_id` 값을 직접 수정.
+- Mode 2 reads PDFs directly from Google Drive via MCP — no Google Drive Desktop or "offline" sync required.
+- `mcp__gdrive__read_file_content` returns text extracted from the PDF; DOI regex is applied to this text. Quality is comparable to pymupdf page-1 extraction for well-formatted PDFs.
+- `added_by` reflects the **last modifier**, not the original uploader — this is a Google Drive API limitation.
 
 ---
 
