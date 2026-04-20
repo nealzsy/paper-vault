@@ -33,7 +33,9 @@
   },
   "userConfig": {
     "vault_papers_path": {
+      "title": "Obsidian Vault Path",
       "description": "Obsidian vault root path (e.g. ~/Documents/Obsidian Vault)",
+      "type": "directory",
       "default": "~/Documents/Obsidian Vault",
       "sensitive": false
     }
