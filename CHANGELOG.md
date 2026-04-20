@@ -1,5 +1,45 @@
 # Changelog
 
+## [1.5.5] - 2026-04-20
+
+### Added
+- **keyword_normalization 활성화** — `references/keyword_normalization.md` 매핑을 실제 워크플로우에 연결. Mode 1/2 모두 태깅 전 키워드 정규화 스텝 추가 (step 5). 정규화된 키워드를 `keywords` 프론트매터 필드에 저장하고, taxonomy 매칭 시 정규화된 텍스트를 기준으로 사용.
+
+### Fixed
+- **버전 불일치 해소** — plugin.json `1.5.2`, SKILL.md `1.4.1`, marketplace.json `1.5.0` → 전부 `1.5.4`로 통일 (이번 릴리즈는 1.5.5)
+
+---
+
+## [1.5.4] - 2026-04-20
+
+### Fixed
+- **볼트 경로 자동 감지** — `list-available-vaults` + 사용자 확인 방식 제거. 대신 `mcp__filesystem__list_allowed_directories` 결과와 obsidian-mcp vault args를 대조해 자동으로 볼트 마운트 경로 결정. 사용자에게 묻지 않음.
+- **Mode 2 `read_file_content` 호출 제거** — `get_file_metadata`의 `contentSnippet`으로 DOI 추출 가능하고 `id`/`viewUrl`/`lastModifyingUser`도 함께 반환되므로 `read_file_content`를 별도 호출하지 않음. `get_file_metadata` 1회 호출로 통합.
+
+---
+
+## [1.5.3] - 2026-04-20
+
+### Fixed
+- **obsidian-mcp 쓰기 타임아웃 대응** — Cowork 환경에서 `create-note`, `edit-note` 등 obsidian-mcp 쓰기 작업이 60초 타임아웃 발생. `search-vault`도 결과 부정확. 원인: obsidian-mcp가 Mac 로컬 경로에 쓰기 권한 없거나 앱 통신 실패.
+  - 모든 쓰기 작업 → built-in Write/Edit 파일 툴 (볼트 마운트 직접 접근) 으로 변경 (primary)
+  - dedup 체크 → `search-vault` 대신 Glob/Bash `ls`로 `Papers/Notes/` 파일목록 직접 비교
+  - Mode 3 읽기 → `read-note` 대신 built-in Read 툴 사용
+  - obsidian-mcp는 `list-available-vaults` 등 가벼운 읽기 보조로만 사용
+  - SKILL.md 전체 워크플로우 업데이트 (Mode 1, 2, 3 + fallback 섹션)
+
+---
+
+## [1.5.2] - 2026-04-20
+
+### Fixed
+- **MCP 툴 이름 네임스페이스 수정** — 플러그인 MCP 서버는 Claude Code에서 `mcp__plugin_<플러그인명>_<서버명>__*` 형식으로 등록됨. SKILL.md와 CLAUDE.md의 모든 툴 참조를 업데이트:
+  - `mcp__obsidian__*` → `mcp__plugin_paper-vault_obsidian__*`
+  - `mcp__paper-search-mcp-openai-v2__*` → `mcp__plugin_paper-vault_paper-search-mcp-openai-v2__*`
+  - `mcp__gdrive__*` → `mcp__plugin_paper-vault_gdrive__*`
+
+---
+
 ## [1.5.1] - 2026-04-20
 
 ### Fixed

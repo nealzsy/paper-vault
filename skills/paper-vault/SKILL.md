@@ -11,7 +11,7 @@ description: >
 license: MIT
 metadata:
   author: nayo
-  version: 1.4.1
+  version: 1.5.5
   category: research
   tags: [obsidian, papers, pdf, markdown, research, knowledge-base, IVF]
 ---
@@ -25,23 +25,18 @@ Searches papers, saves them as structured notes, tags with a fixed taxonomy, and
 
 Notes are **always written to the Obsidian vault**, regardless of where PDFs are stored.
 
-**Before doing anything else, verify the vault path is configured:**
+**Before doing anything else, auto-detect the vault path:**
 
-1. Try `mcp__obsidian-mcp__list-available-vaults` to check the connected vault path.
-2. If the vault path looks wrong (e.g. still shows default `~/Documents/Obsidian Vault`) or the MCP fails → ask the user:
-   > "Obsidian 볼트 경로를 알려주세요. (예: `/Users/yourname/Documents/My Vault`)"
-3. Once confirmed, tell the user to update `~/.claude/settings.json` by adding:
-   ```json
-   "pluginUserConfig": {
-     "paper-vault@paper-vault-marketplace": {
-       "vault_papers_path": "/Users/yourname/Documents/My Vault"
-     }
-   }
-   ```
-   Then restart Claude Code / Cowork to apply.
+1. Call `mcp__filesystem__list_allowed_directories` to get all mounted paths.
+2. The vault is the mounted path that is **also listed as an obsidian-mcp vault arg** in the user's MCP config.
+   - If multiple paths are mounted, pick the one that matches an obsidian-mcp vault path.
+   - If still ambiguous, check which path contains a `Papers/` subfolder.
+3. **Never ask the user** — always determine from mounted directories automatically.
 
-Vault path is set via `vault_papers_path` (configured in `~/.claude/settings.json`).
-Default: `~/Documents/Obsidian Vault`
+> Example: if `list_allowed_directories` returns `/Users/x/agent/paper-vault` and `/Users/x/agent/link-vault`,
+> and obsidian-mcp is configured with `/Users/x/agent/link-vault` as a vault arg → use `link-vault` as vault root.
+
+Vault path is auto-detected per session via `mcp__filesystem__list_allowed_directories`.
 
 ```
 {vault_papers_path}/          ← Obsidian vault (notes written here)
@@ -119,10 +114,20 @@ Tag if the author's affiliation field contains any of the following (case-insens
 | `doi` | DOI | "" |
 | `arxiv_id` | arXiv ID | "" |
 | `abstract` | Full abstract | "" |
+| `keywords` | Normalized keywords from paper metadata or abstract | [] |
 | `performance_metrics` | Performance figures (AUC, accuracy, sensitivity, etc.) | "" |
 | `is_multicenter` | Whether multi-center study | false |
 | `research_area_tags` | Research area tags (taxonomy match) | [] |
 | `affiliation_tags` | Affiliation tags (list match) | [] |
+
+### Extracting and normalizing keywords
+1. Source: use paper's own `keywords` field from DB result (CrossRef/Semantic). If empty, extract 3–7 key terms from abstract.
+2. Normalize each keyword using [references/keyword_normalization.md](references/keyword_normalization.md):
+   - Look up raw form in the map → replace with normalized form
+   - e.g. `"Deep Learning"` → `"deep learning"`, `"PGT-A"` → `"preimplantation genetic testing"`
+   - No match → keep original, lowercased
+3. Store normalized list in `keywords` frontmatter field.
+4. **Use normalized keywords for taxonomy matching** (step Apply tags) — more reliable than raw abstract text.
 
 ### Extracting performance_metrics
 Pull numeric results directly from abstract. Examples:
@@ -154,6 +159,10 @@ year: 2024
 journal: "Journal name"
 doi: "10.xxxx/xxxxx"
 arxiv_id: ""
+keywords:
+  - "deep learning"
+  - "embryo selection"
+  - "time-lapse imaging"
 performance_metrics: "AUC: 0.82, sensitivity: 78%"
 is_multicenter: false
 research_area:
@@ -247,19 +256,24 @@ Papers with author affiliation matching Alife (per taxonomy).
 
 ## Papers
 - [[2024 Example paper title]]
-
-## Related affiliations
-[[KaiHealth]] | [[Presagen]]
 ```
 
 When adding a new paper: append the paper link to **each** hub file that applies (Keywords and/or Affiliation) and update `paper_count` and `last_updated` in that file.
 
-> **⚠️ edit-note fallback:** `mcp__obsidian__edit-note` may fail with a schema error in some environments. If it does, use this fallback sequence:
-> 1. `mcp__obsidian__read-note` — read the current hub note content
-> 2. Modify the content in memory: increment `paper_count`, update `last_updated`, append the new paper link under `## Papers`
-> 3. Write the full updated content directly to the vault path using the built-in **Write** or **Edit** file tool at `{vault_papers_path}/Papers/Keywords/[Research Area].md` or `{vault_papers_path}/Papers/Affiliation/[Company].md`
+> **⚠️ obsidian-mcp 쓰기 불가 (Cowork 환경):** `create-note`, `edit-note` 등 모든 **쓰기** 작업은 obsidian-mcp에서 타임아웃이 발생한다. Cowork에서는 볼트 폴더가 직접 마운트되어 있으므로 **쓰기는 항상 내장 파일 툴을 사용**한다.
 >
-> The vault folder is always accessible as a mounted path in Cowork — do **not** fall back to `mcp__filesystem__*` tools.
+> **dedup 체크도 `search-vault` 대신 파일시스템으로:** `search-vault`는 결과가 부정확할 수 있으므로 Glob 또는 Bash `ls`로 `Papers/Notes/` 파일 목록을 직접 확인한다.
+>
+> **볼트 경로 (Cowork 마운트):** `mcp__filesystem__list_allowed_directories`로 마운트 경로 목록 취득 → obsidian-mcp vault args와 대조해 일치하는 경로를 볼트로 사용. 하드코딩 금지.
+>
+> 작업별 대체 방법:
+> - **노트 생성** → built-in `Write` 툴로 `{vault_mount}/Papers/Notes/[filename].md` 직접 작성
+> - **허브 읽기** → built-in `Read` 툴로 `{vault_mount}/Papers/Keywords/[Research Area].md` 읽기
+> - **허브 업데이트** → `Read` 후 `Edit` 툴로 수정 (paper_count +1, last_updated, ## Papers에 링크 추가)
+> - **dedup 체크** → `Glob("{vault_mount}/Papers/Notes/*.md")` 또는 Bash `ls`로 파일명 비교
+> - **노트 읽기** → built-in `Read` 툴 사용
+>
+> obsidian-mcp는 **읽기 전용 보조**로만 사용 (list-available-vaults로 볼트명 확인 등). 절대 `mcp__filesystem__*` 툴은 사용하지 않는다.
 
 ---
 
@@ -287,15 +301,15 @@ When user requests "find N papers on topic X".
    - AI/ML methods → arXiv ONLY
    - 0 results → one retry with Semantic Scholar (final attempt)
 
-2. Dedup check BEFORE saving:
-   - mcp__obsidian__search-vault(query=doi)
-   - DOI already in vault → skip, pick next result
+2. Dedup check BEFORE saving (파일시스템 직접 확인):
+   - Glob("{vault_mount}/Papers/Notes/*.md") 로 기존 노트 파일명 목록 취득
+   - DOI 또는 title keyword가 파일명에 포함되어 있으면 → skip, pick next result
    - Only save papers not already in vault
 
 3. Search via paper-search MCP (maximum 2 calls total)
-   mcp__paper-search-mcp-openai-v2__search_pubmed   (medical)
-   mcp__paper-search-mcp-openai-v2__search_arxiv    (CS/AI)
-   mcp__paper-search-mcp-openai-v2__search_semantic (general + affiliation)
+   mcp__plugin_paper-vault_paper-search-mcp-openai-v2__search_pubmed   (medical)
+   mcp__plugin_paper-vault_paper-search-mcp-openai-v2__search_arxiv    (CS/AI)
+   mcp__plugin_paper-vault_paper-search-mcp-openai-v2__search_semantic (general + affiliation)
 
 4. Check search result completeness FIRST (skip DB calls if already complete):
    - Search result has title + authors + abstract + DOI → skip to step 5 immediately
@@ -305,23 +319,25 @@ When user requests "find N papers on topic X".
      b. still missing → proceed with empty abstract. Stop here.
    - Never call CrossRef if the search result already contains title + authors + abstract + DOI.
 
-5. Apply tags (taxonomy match)
-   - abstract + title → research_area_tags
-   - affiliation → affiliation_tags
+5. Normalize keywords + apply tags
+   a. Extract keywords from DB result's keywords field (or top terms from abstract if empty)
+   b. Normalize using references/keyword_normalization.md → store as `keywords` list
+   c. Match normalized keywords + title against taxonomy → research_area_tags
+   d. Match affiliation field against taxonomy → affiliation_tags
    - No match → empty array. Never force.
 
-6. Create note → update hub indexes
-   - New note → mcp__obsidian__create-note(path="Papers/Notes/[filename].md", content=...)
+6. Create note → update hub indexes (파일 툴 직접 사용)
+   - New note → built-in Write 툴로 `{vault_mount}/Papers/Notes/[filename].md` 직접 작성
    - For EACH `research_area_tags` match:
-     - Index exists → mcp__obsidian__read-note then mcp__obsidian__edit-note
-     - Index missing → mcp__obsidian__create-note(path="Papers/Keywords/[Research Area].md", content=...)
+     - Index exists → Read 툴로 읽고 Edit 툴로 수정 (paper_count +1, last_updated, ## Papers에 링크 추가)
+     - Index missing → Write 툴로 `{vault_mount}/Papers/Keywords/[Research Area].md` 신규 생성
    - For EACH `affiliation_tags` match:
-     - Index exists → mcp__obsidian__read-note then mcp__obsidian__edit-note
-     - Index missing → mcp__obsidian__create-note(path="Papers/Affiliation/[Company].md", content=...)
+     - Index exists → Read 툴로 읽고 Edit 툴로 수정
+     - Index missing → Write 툴로 `{vault_mount}/Papers/Affiliation/[Company].md` 신규 생성
    - Examples:
-     - research/pregnancy-prediction → `Papers/Keywords/Pregnancy Prediction.md`
-     - affiliation/alife → `Papers/Affiliation/Alife.md`
-     - affiliation/kaihealth → `Papers/Affiliation/KaiHealth.md`
+     - research/pregnancy-prediction → `{vault_mount}/Papers/Keywords/Pregnancy Prediction.md`
+     - affiliation/alife → `{vault_mount}/Papers/Affiliation/Alife.md`
+     - affiliation/kaihealth → `{vault_mount}/Papers/Affiliation/KaiHealth.md`
 
 7. Report summary to user
 ```
@@ -341,58 +357,57 @@ Notes는 항상 `{vault_papers_path}/Papers/Notes/`에 저장된다.
 
 ```
 1. Find PDFs in Drive folder
-   mcp__gdrive__search_files(
-     folder_id="0AAhracftG0XwUk9PVA",
-     query="mimeType='application/pdf'"
-   )
-   → file list: [{id, name, modifiedTime, lastModifyingUser}, ...]
+   gdrive__search_files(query="mimeType='application/pdf'")
+   → `parents` 필터 미지원 — folder_id 파라미터 사용 금지. mimeType만으로 검색.
+   → file list: [{id, name, title, viewUrl, modifiedTime}, ...]
 
 2. Skip already-processed PDFs (dedup check) + count guard:
-   - For each file, extract a candidate DOI hint from file name if possible
-     (e.g. "10.1016_j.rbmo.2024.104123.pdf" → DOI hint)
-   - mcp__obsidian__search-vault(query=doi_hint or file_name_stem)
-   - Matching note found → SKIP (스킵된 파일은 N 카운트에 포함 안 함)
+   - Glob("{vault_mount}/Papers/Notes/*.md") 로 기존 노트 파일명 목록 취득 (1회만, 전체 처리 전 미리)
+   - For each file, extract a candidate DOI hint or title stem from file name
+     (e.g. "10.1016_j.rbmo.2024.104123.pdf" → DOI hint; "deae108.553.pdf" → stem "deae108.553")
+   - 기존 노트 목록에 doi_hint 또는 file_name_stem이 포함된 파일명이 있으면 → SKIP
    - 새 노트 생성 완료 수가 N에 도달하면 → 남은 파일 처리 없이 즉시 step 7로 이동
    - Only process files with no matching existing note
 
-3. For each unprocessed PDF, extract text and pull DOI + title:
-   mcp__gdrive__read_file_content(file_id=...)
-   → Returns extracted text of the PDF
+3. For each unprocessed PDF, call get_file_metadata ONCE — do NOT call read_file_content:
+   gdrive__get_file_metadata(file_id=...)
+   → Returns: id, viewUrl, lastModifyingUser, contentSnippet (partial PDF text)
 
-   a. Apply DOI regex to extracted text:
+   a. Apply DOI regex to contentSnippet:
       r'10\.\d{4,9}/[^\s\])]+'
       → use first match as DOI
 
-   b. If no DOI found → extract candidate title from first 500 chars
+   b. If no DOI found → extract candidate title from contentSnippet first 500 chars
       (first long line that is not a URL, author list, or journal name)
       → use as title for DB search fallback
 
-   c. Get file metadata for Drive link + uploader:
-      mcp__gdrive__get_file_metadata(file_id=...)
+   c. Set Drive fields from get_file_metadata response:
       → gdrive_file_id = file.id
       → gdrive_url = "https://drive.google.com/file/d/{file_id}/view"
       → added_by = file.lastModifyingUser.emailAddress (or "")
 
 4. Fetch full metadata from DB:
-   - DOI found → mcp__paper-search-mcp-openai-v2__get_crossref_paper_by_doi
+   - DOI found → mcp__plugin_paper-vault_paper-search-mcp-openai-v2__get_crossref_paper_by_doi
      (most accurate — title, authors, journal, year)
    - Abstract missing from CrossRef result:
-     a. Search extracted PDF text for "Abstract" section (regex, no MCP cost)
+     a. Search contentSnippet (from get_file_metadata) for "Abstract" section (regex, no MCP cost)
      b. If found → use as abstract. Stop here.
-     c. If still missing → mcp__paper-search-mcp-openai-v2__read_semantic_paper
-        ONCE for abstract only (last resort)
-   - No DOI, has title → mcp__paper-search-mcp-openai-v2__search_semantic
+     c. If still missing → read_semantic_paper ONCE for abstract only (last resort)
+   - No DOI, has title → mcp__plugin_paper-vault_paper-search-mcp-openai-v2__search_semantic
      (returns abstract, affiliation, citations)
 
-5. Apply tags (taxonomy match)
-   - abstract + title → research_area_tags
-   - affiliation → affiliation_tags
+5. Normalize keywords + apply tags
+   a. Extract keywords from DB result's keywords field (or top terms from abstract if empty)
+   b. Normalize using references/keyword_normalization.md → store as `keywords` list
+   c. Match normalized keywords + title against taxonomy → research_area_tags
+   d. Match affiliation field against taxonomy → affiliation_tags
+   - No match → empty array. Never force.
 
-6. Create note → update hub indexes
+6. Create note → update hub indexes (파일 툴 직접 사용 — obsidian-mcp 쓰기 사용 금지)
    - Include Drive fields in frontmatter: pdf_source, gdrive_file_id, gdrive_url, added_by
-   - Same hub update logic as Mode 1 step 6
-   - research area tag → `Papers/Keywords/[Research Area].md`
-   - affiliation tag → `Papers/Affiliation/[Company].md`
+   - Write 툴로 `{vault_mount}/Papers/Notes/[filename].md` 직접 작성
+   - research area tag → Read/Edit 툴로 `{vault_mount}/Papers/Keywords/[Research Area].md` 업데이트
+   - affiliation tag → Read/Edit 툴로 `{vault_mount}/Papers/Affiliation/[Company].md` 업데이트
 
 7. Report summary
    - N new notes created
@@ -406,8 +421,8 @@ When user asks "show me papers on Pregnancy Prediction" or "papers from Alife".
 
 ```
 1. Resolve category against taxonomy:
-   - Research Area (Pregnancy Prediction, Gardner Grade, …) → mcp__obsidian__read-note("Papers/Keywords/[category].md")
-   - Affiliation (KaiHealth, Alife, …) → mcp__obsidian__read-note("Papers/Affiliation/[category].md")
+   - Research Area (Pregnancy Prediction, Gardner Grade, …) → Read 툴로 `{vault_mount}/Papers/Keywords/[category].md`
+   - Affiliation (KaiHealth, Alife, …) → Read 툴로 `{vault_mount}/Papers/Affiliation/[category].md`
 2. Return paper list from the hub note's ## Papers section
 ```
 
@@ -452,7 +467,7 @@ Updated affiliation indexes: KaiHealth (2→3 papers)
 - `vault_papers_path` is set during plugin install (default: `~/Documents/Obsidian Vault`). Must point to vault root — not the `Papers/` subfolder.
 - Google Drive 대상 폴더는 `0AAhracftG0XwUk9PVA`로 고정 (`https://drive.google.com/drive/folders/0AAhracftG0XwUk9PVA`). 변경 시 SKILL.md Mode 2 step 1의 `folder_id` 값을 직접 수정.
 - Mode 2 reads PDFs directly from Google Drive via MCP — no Google Drive Desktop or "offline" sync required.
-- `mcp__gdrive__read_file_content` returns text extracted from the PDF; DOI regex is applied to this text. Quality is comparable to pymupdf page-1 extraction for well-formatted PDFs.
+- Mode 2 PDF 처리는 `get_file_metadata`의 `contentSnippet`으로 DOI 추출. `read_file_content` 호출 금지 (속도 저하).
 - `added_by` reflects the **last modifier**, not the original uploader — this is a Google Drive API limitation.
 
 ---

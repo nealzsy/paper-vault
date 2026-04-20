@@ -1,7 +1,7 @@
 {
   "name": "paper-vault",
   "description": "Search IVF/reproductive medicine papers online, extract structured metadata, and generate linked Obsidian markdown notes with taxonomy-based tagging. Supports direct Google Drive PDF import.",
-  "version": "1.5.1",
+  "version": "1.5.5",
   "author": {
     "name": "nayo",
     "email": "nayo.youn@kaihealth.tech"
