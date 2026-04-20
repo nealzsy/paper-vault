@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.5.1] - 2026-04-20
+
+### Fixed
+- **`userConfig.vault_papers_path` 설치 시 프롬프트 미출력 수정** — `type: "directory"` → `type: "string"` 변경, `required: true` 추가. 기존에는 설치 시 볼트 경로 입력 프롬프트가 뜨지 않아 `vault_papers_path`가 settings.json에 저장되지 않는 문제가 있었음.
+
+---
+
 ## [1.5.0] - 2026-04-20
 
 ### Added
