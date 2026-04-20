@@ -1,0 +1,27 @@
+{
+  "name": "paper-vault-marketplace",
+  "owner": {
+    "name": "nayo",
+    "email": "nayo.youn@kaihealth.tech"
+  },
+  "metadata": {
+    "description": "Internal plugin marketplace for Paper Vault — IVF/reproductive medicine research workflow tools for Obsidian.",
+    "version": "1.0.0"
+  },
+  "plugins": [
+    {
+      "name": "paper-vault",
+      "source": ".",
+      "description": "Search IVF/reproductive medicine papers online, extract structured metadata, and generate linked Obsidian markdown notes with taxonomy-based tagging. Supports direct Google Drive PDF import.",
+      "version": "1.4.1",
+      "author": {
+        "name": "nayo",
+        "email": "nayo.youn@kaihealth.tech"
+      },
+      "license": "MIT",
+      "category": "research",
+      "tags": ["obsidian", "papers", "research", "IVF", "knowledge-base", "google-drive"],
+      "strict": true
+    }
+  ]
+}

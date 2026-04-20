@@ -2,6 +2,9 @@
 
 ## [1.4.1] - 2026-04-20
 
+### Added
+- **`.claude-plugin/marketplace.json` 추가** — repo를 조직 내부 플러그인 마켓플레이스로 쓸 수 있도록 manifest 추가. `/plugin marketplace add nealzsy/paper-vault` 후 `/plugin install paper-vault@paper-vault-marketplace`로 설치 가능. `source: "."`로 자기 자신을 플러그인으로 등재.
+
 ### Fixed
 - **`edit-note` fallback 명시** — obsidian MCP의 `edit-note` 툴이 일부 환경에서 스키마 오류로 실패하는 버그 대응. SKILL.md hub 인덱스 업데이트 섹션 및 CLAUDE.md Common Pitfalls에 fallback 절차 추가: `read-note`로 현재 내용 읽기 → 메모리에서 수정 → 빌트인 Write/Edit 파일 도구로 vault 마운트 경로에 직접 덮어쓰기. `mcp__filesystem__*`는 경로 제한으로 사용 불가 — 명시적으로 금지.
 - **`is_multicenter` 판단 기준 보완** — 기존 키워드("multi-center", "multicenter" 등) 외에 "multiple clinics" 및 "2개 이상의 named 클리닉/병원에서 데이터 수집" 패턴도 `true`로 판단하도록 수정. ESHRE abstract처럼 "seven in vitro fertilization clinics" 표현을 감지하지 못하던 문제 수정.

@@ -26,8 +26,9 @@ paper-vault/
 # Session-only (for testing)
 claude --plugin-dir /path/to/paper-vault
 
-# Permanent (via org marketplace)
-/plugin marketplace add your-org/plugin-catalog
+# Permanent (via marketplace — repo is its own marketplace)
+/plugin marketplace add nealzsy/paper-vault
+/plugin install paper-vault@paper-vault-marketplace
 ```
 
 During installation, Claude Code will prompt for:

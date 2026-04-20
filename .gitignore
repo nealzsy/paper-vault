@@ -28,3 +28,6 @@ env/
 
 # Logs
 *.log
+
+# Cowork plugin bundle (build artifact — do not commit)
+*.plugin
