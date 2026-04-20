@@ -11,7 +11,10 @@
   "plugins": [
     {
       "name": "paper-vault",
-      "source": ".",
+      "source": {
+        "source": "github",
+        "repo": "nealzsy/paper-vault"
+      },
       "description": "Search IVF/reproductive medicine papers online, extract structured metadata, and generate linked Obsidian markdown notes with taxonomy-based tagging. Supports direct Google Drive PDF import.",
       "version": "1.4.1",
       "author": {
