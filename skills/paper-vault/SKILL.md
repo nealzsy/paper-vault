@@ -11,7 +11,7 @@ description: >
 license: MIT
 metadata:
   author: nayo
-  version: 1.5.5
+  version: 1.5.7
   category: research
   tags: [obsidian, papers, pdf, markdown, research, knowledge-base, IVF]
 ---
@@ -260,20 +260,31 @@ Papers with author affiliation matching Alife (per taxonomy).
 
 When adding a new paper: append the paper link to **each** hub file that applies (Keywords and/or Affiliation) and update `paper_count` and `last_updated` in that file.
 
-> **⚠️ obsidian-mcp 쓰기 불가 (Cowork 환경):** `create-note`, `edit-note` 등 모든 **쓰기** 작업은 obsidian-mcp에서 타임아웃이 발생한다. Cowork에서는 볼트 폴더가 직접 마운트되어 있으므로 **쓰기는 항상 내장 파일 툴을 사용**한다.
+> **⚠️ 허브 파일 업데이트 규칙 — 반드시 준수:**
+> - 허브 파일이 **이미 존재하면** → `Read` 툴로 읽은 후 `Edit` 툴로 수정 (paper_count +1, last_updated 갱신, `## Papers` 섹션에 링크 추가)
+> - 허브 파일이 **없을 때만** → `Write` 툴로 신규 생성
+> - **절대 금지:** `Write` 툴이나 Bash `cat >` 명령으로 기존 허브 파일을 덮어쓰는 행위 → 기존 논문 목록이 삭제됨
+> - 존재 여부 확인 방법: `Glob("{vault_mount}/Papers/Keywords/*.md")` 또는 `Glob("{vault_mount}/Papers/Affiliation/*.md")` 로 미리 파일 목록을 취득한 후, 대상 파일명이 포함되어 있으면 Read+Edit, 없으면 Write
+
+> **⚠️ obsidian-mcp 툴 동작 현황 (Cowork 환경):**
 >
-> **dedup 체크도 `search-vault` 대신 파일시스템으로:** `search-vault`는 결과가 부정확할 수 있으므로 Glob 또는 Bash `ls`로 `Papers/Notes/` 파일 목록을 직접 확인한다.
+> | 툴 | 상태 | 사용 |
+> |----|------|------|
+> | `create-note` | ⚠️ 간헐적 타임아웃 | 노트/허브 신규 생성에 사용. 중복 시 에러로 안전하게 차단. 타임아웃 시 내장 `Write` 툴로 fallback |
+> | `read-note` | ✅ 정상 | 노트 읽기에 사용 가능 |
+> | `search-vault` | ✅ 정상 | 보조 검색에 사용 가능 |
+> | `delete-note` | ✅ 정상 | 삭제에 사용 가능 |
+> | `edit-note` | ❌ schema 버그 | `Invalid discriminator value` — 사용 금지 |
+> | `list-available-vaults` | ❌ 타임아웃 | 사용 금지 |
 >
-> **볼트 경로 (Cowork 마운트):** `mcp__filesystem__list_allowed_directories`로 마운트 경로 목록 취득 → obsidian-mcp vault args와 대조해 일치하는 경로를 볼트로 사용. 하드코딩 금지.
+> **작업별 툴 선택:**
+> - **노트 신규 생성** → `mcp__obsidian-mcp__create-note` (vault, filename, folder, content); 타임아웃 시 내장 `Write` 툴로 `{vault_mount}/Papers/Notes/{filename}`에 직접 저장
+> - **허브 신규 생성** → `mcp__obsidian-mcp__create-note`; 타임아웃 시 내장 `Write` 툴로 `{vault_mount}/Papers/Keywords/` 또는 `Papers/Affiliation/`에 직접 저장
+> - **허브 업데이트 (기존 파일)** → 내장 `Read` 툴로 읽고 내장 `Edit` 툴로 수정 (`edit-note` 사용 금지)
+> - **dedup 체크** → `Glob("{vault_mount}/Papers/Notes/*.md")` 또는 Bash `ls`로 파일명 비교 (`search-vault` 결과 부정확할 수 있음)
+> - **볼트 경로** → `mcp__filesystem__list_allowed_directories`로 마운트 경로 취득. 하드코딩 금지.
 >
-> 작업별 대체 방법:
-> - **노트 생성** → built-in `Write` 툴로 `{vault_mount}/Papers/Notes/[filename].md` 직접 작성
-> - **허브 읽기** → built-in `Read` 툴로 `{vault_mount}/Papers/Keywords/[Research Area].md` 읽기
-> - **허브 업데이트** → `Read` 후 `Edit` 툴로 수정 (paper_count +1, last_updated, ## Papers에 링크 추가)
-> - **dedup 체크** → `Glob("{vault_mount}/Papers/Notes/*.md")` 또는 Bash `ls`로 파일명 비교
-> - **노트 읽기** → built-in `Read` 툴 사용
->
-> obsidian-mcp는 **읽기 전용 보조**로만 사용 (list-available-vaults로 볼트명 확인 등). 절대 `mcp__filesystem__*` 툴은 사용하지 않는다.
+> 절대 `mcp__filesystem__*` 툴은 사용하지 않는다.
 
 ---
 
@@ -293,7 +304,11 @@ When user requests "find N papers on topic X".
 - If affiliation cannot be confirmed from DB results → tag as `affiliation_tags: []` and proceed. Never block note creation on affiliation uncertainty.
 
 ```
-1. Identify topic → choose ONE source. Do NOT search multiple sources.
+1. Pre-fetch existing notes list (dedup용 — 검색 전 1회만):
+   - Glob("{vault_mount}/Papers/Notes/*.md") 로 기존 노트 파일명 목록 취득
+   - 이 목록을 이후 모든 dedup 비교에 재사용 (반복 Glob 금지)
+
+2. Identify topic → choose ONE source. Do NOT search multiple sources.
    - Specific company papers → check references/known_authors.md first
      Use product name or author name, NOT company name directly
      e.g. "KaiHealth" → search "VITA EMBRYO" or "Hye Jun Lee embryo"
@@ -301,45 +316,52 @@ When user requests "find N papers on topic X".
    - AI/ML methods → arXiv ONLY
    - 0 results → one retry with Semantic Scholar (final attempt)
 
-2. Dedup check BEFORE saving (파일시스템 직접 확인):
-   - Glob("{vault_mount}/Papers/Notes/*.md") 로 기존 노트 파일명 목록 취득
-   - DOI 또는 title keyword가 파일명에 포함되어 있으면 → skip, pick next result
-   - Only save papers not already in vault
-
 3. Search via paper-search MCP (maximum 2 calls total)
    mcp__plugin_paper-vault_paper-search-mcp-openai-v2__search_pubmed   (medical)
    mcp__plugin_paper-vault_paper-search-mcp-openai-v2__search_arxiv    (CS/AI)
    mcp__plugin_paper-vault_paper-search-mcp-openai-v2__search_semantic (general + affiliation)
 
-4. Check search result completeness FIRST (skip DB calls if already complete):
-   - Search result has title + authors + abstract + DOI → skip to step 5 immediately
+4. Dedup check per result — 노트가 이미 있으면 즉시 skip:
+   - 검색 결과의 DOI 또는 title keyword가 step 1 목록의 파일명에 포함되어 있으면
+     → 해당 논문은 skip. step 5~7 일절 실행하지 않고 다음 결과로 넘어감
+   - 이미 존재하는 노트는 메타데이터 조회, 태깅, 저장 어떤 것도 하지 않는다
+
+5. Check search result completeness FIRST (skip DB calls if already complete):
+   - Search result has title + authors + abstract + DOI → skip to step 6 immediately
    - DOI missing → get_crossref_paper_by_doi to retrieve DOI (then check abstract)
    - Abstract missing (but DOI present):
      a. read_semantic_paper ONCE for abstract only
      b. still missing → proceed with empty abstract. Stop here.
    - Never call CrossRef if the search result already contains title + authors + abstract + DOI.
 
-5. Normalize keywords + apply tags
+6. Normalize keywords + apply tags
    a. Extract keywords from DB result's keywords field (or top terms from abstract if empty)
    b. Normalize using references/keyword_normalization.md → store as `keywords` list
    c. Match normalized keywords + title against taxonomy → research_area_tags
    d. Match affiliation field against taxonomy → affiliation_tags
    - No match → empty array. Never force.
 
-6. Create note → update hub indexes (파일 툴 직접 사용)
-   - New note → built-in Write 툴로 `{vault_mount}/Papers/Notes/[filename].md` 직접 작성
+7. Create note → update hub indexes
+   - 노트 신규 생성 → mcp__obsidian-mcp__create-note (vault, filename, folder="Papers/Notes", content)
+   - 허브 업데이트 전: Glob으로 Keywords/*.md, Affiliation/*.md 파일 목록을 먼저 취득
    - For EACH `research_area_tags` match:
-     - Index exists → Read 툴로 읽고 Edit 툴로 수정 (paper_count +1, last_updated, ## Papers에 링크 추가)
-     - Index missing → Write 툴로 `{vault_mount}/Papers/Keywords/[Research Area].md` 신규 생성
+     - Index exists (Glob 목록에 있음) → 내장 Read 툴로 읽고 내장 Edit 툴로 수정
+       (paper_count +1, last_updated 갱신, ## Papers 섹션에 링크 추가)
+     - Index missing (Glob 목록에 없음) → mcp__obsidian-mcp__create-note로 신규 생성
+       (folder="Papers/Keywords")
+     - ⛔ 기존 파일을 Write/cat >로 덮어쓰지 말 것 — 기존 논문 목록 삭제됨
    - For EACH `affiliation_tags` match:
-     - Index exists → Read 툴로 읽고 Edit 툴로 수정
-     - Index missing → Write 툴로 `{vault_mount}/Papers/Affiliation/[Company].md` 신규 생성
+     - Index exists (Glob 목록에 있음) → 내장 Read 툴로 읽고 내장 Edit 툴로 수정
+       (paper_count +1, last_updated 갱신, ## Papers 섹션에 링크 추가)
+     - Index missing (Glob 목록에 없음) → mcp__obsidian-mcp__create-note로 신규 생성
+       (folder="Papers/Affiliation")
+     - ⛔ 기존 파일을 Write/cat >로 덮어쓰지 말 것 — 기존 논문 목록 삭제됨
    - Examples:
-     - research/pregnancy-prediction → `{vault_mount}/Papers/Keywords/Pregnancy Prediction.md`
-     - affiliation/alife → `{vault_mount}/Papers/Affiliation/Alife.md`
-     - affiliation/kaihealth → `{vault_mount}/Papers/Affiliation/KaiHealth.md`
+     - research/pregnancy-prediction → folder="Papers/Keywords", filename="Pregnancy Prediction.md"
+     - affiliation/alife → folder="Papers/Affiliation", filename="Alife.md"
+     - affiliation/kaihealth → folder="Papers/Affiliation", filename="KaiHealth.md"
 
-7. Report summary to user
+8. Report summary to user
 ```
 
 ### Mode 2: Tag PDF Files (Google Drive)
@@ -403,11 +425,22 @@ Notes는 항상 `{vault_papers_path}/Papers/Notes/`에 저장된다.
    d. Match affiliation field against taxonomy → affiliation_tags
    - No match → empty array. Never force.
 
-6. Create note → update hub indexes (파일 툴 직접 사용 — obsidian-mcp 쓰기 사용 금지)
+6. Create note → update hub indexes
    - Include Drive fields in frontmatter: pdf_source, gdrive_file_id, gdrive_url, added_by
-   - Write 툴로 `{vault_mount}/Papers/Notes/[filename].md` 직접 작성
-   - research area tag → Read/Edit 툴로 `{vault_mount}/Papers/Keywords/[Research Area].md` 업데이트
-   - affiliation tag → Read/Edit 툴로 `{vault_mount}/Papers/Affiliation/[Company].md` 업데이트
+   - 노트 신규 생성 → mcp__obsidian-mcp__create-note (vault, filename, folder="Papers/Notes", content)
+   - 허브 업데이트 전: Glob으로 Keywords/*.md, Affiliation/*.md 파일 목록을 먼저 취득
+   - research area tag → 파일 존재 여부 확인:
+     - 존재 (Glob 목록에 있음) → 내장 Read 툴로 읽고 내장 Edit 툴로 수정
+       (paper_count +1, last_updated 갱신, ## Papers 섹션에 링크 추가)
+     - 없음 (Glob 목록에 없음) → mcp__obsidian-mcp__create-note로 신규 생성
+       (folder="Papers/Keywords")
+     - ⛔ 기존 파일을 Write/cat >로 덮어쓰지 말 것 — 기존 논문 목록 삭제됨
+   - affiliation tag → 파일 존재 여부 확인:
+     - 존재 (Glob 목록에 있음) → 내장 Read 툴로 읽고 내장 Edit 툴로 수정
+       (paper_count +1, last_updated 갱신, ## Papers 섹션에 링크 추가)
+     - 없음 (Glob 목록에 없음) → mcp__obsidian-mcp__create-note로 신규 생성
+       (folder="Papers/Affiliation")
+     - ⛔ 기존 파일을 Write/cat >로 덮어쓰지 말 것 — 기존 논문 목록 삭제됨
 
 7. Report summary
    - N new notes created

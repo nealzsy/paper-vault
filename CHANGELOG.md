@@ -1,5 +1,29 @@
 # Changelog
 
+## [1.5.8] - 2026-04-21
+
+### Changed
+- **`create-note` 타임아웃 fallback 추가** — Cowork 환경에서 `mcp__obsidian-mcp__create-note`가 간헐적으로 60초 타임아웃 발생. 타임아웃 시 내장 `Write` 툴로 볼트 경로에 직접 파일 생성하는 fallback 절차를 SKILL.md 작업별 툴 선택 항목에 명시. 툴 상태 표에서 `create-note` 상태를 ✅ → ⚠️ 간헐적 타임아웃으로 업데이트.
+
+---
+
+## [1.5.7] - 2026-04-21
+
+### Changed
+- **dedup 체크 위치 변경 (Mode 1)** — 기존 노트 파일 목록 취득을 검색 전 step 1로 이동. 노트가 이미 존재하면 메타데이터 조회/태깅/저장 전 단계 모두 skip.
+- **노트/허브 신규 생성 툴 변경** — 내장 `Write` 툴 → `mcp__obsidian-mcp__create-note`로 교체 (Mode 1, Mode 2 모두). `create-note`는 중복 시 에러로 안전하게 차단하여 실수로 기존 노트를 덮어쓰는 문제 방지.
+- **허브 업데이트는 내장 Read+Edit 유지** — `edit-note`가 schema 버그로 사용 불가하므로 기존 허브 파일 수정은 내장 `Read` → `Edit` 툴 사용.
+- **⚠️ callout 현행화** — obsidian-mcp 툴별 동작 상태 표 추가 (create-note/read-note/search-vault/delete-note ✅, edit-note/list-available-vaults ❌).
+
+---
+
+## [1.5.6] - 2026-04-21
+
+### Fixed
+- **허브 파일 덮어쓰기 방지 규칙 명시** — SKILL.md의 Mode 1 step 6, Mode 2 step 6, 허브 인덱스 섹션 3곳에 "기존 허브 파일은 Read+Edit으로만 업데이트, Write/cat >로 덮어쓰기 절대 금지" 규칙을 명확히 추가. Glob으로 파일 존재 여부를 먼저 확인한 후 존재 시 Edit, 없을 때만 Write하는 절차를 명시.
+
+---
+
 ## [1.5.5] - 2026-04-20
 
 ### Added
